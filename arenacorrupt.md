@@ -101,7 +101,7 @@ The arena would then read:
   
 ```
 
-Now if we read from `importantNumber`, we'll actually be reading memory intended for `mostImportantNumber`! At best, this will somehow lead to a crash during development that the programmer can then dutifuly hunt down and bring to justice. It will be a pain to find, though. But worst of all, these kinds of bugs can easily slip through and go unnoticed until they creep up somewhere else and cause all kinds of nightmares, at which point the unfortunate developer will pay the ultimate price. So the question is: how do you make sure that you find all the bugs of this sort during development to avoid provoking the wrath of the powers that be?
+Now if we read from `importantNumber`, we'll actually be reading memory intended for `mostImportantNumber`! At best, this bug will somehow lead to a crash during development, at which point the programmer can then dutifuly hunt down and bring to justice. It will be a pain to find, though. But worst of all, these kinds of bugs can easily slip through and go unnoticed until they creep up somewhere else and cause all kinds of nightmares, at which point the unfortunate developer will pay the ultimate price. So the question is: how do you make sure that you find all the bugs of this sort during development to avoid provoking the wrath of the powers that be?
 
 Here's the solution I came up with while implementing Nost: *intentional memory corruption*. It works like so: when you clear the arena, set every byte allocated to a random value. In code,
 
@@ -113,7 +113,7 @@ void arenaClear(arena* arn) {
 }
 ```
 
-Now, let's go back in time right before we clear our arena. 
+Now, let's go back in time to right before we clear our arena. 
 
 ```
  base                                    curr
@@ -136,6 +136,6 @@ At this point, reading from `importantNumber` still yields a reasonable 33. Now 
 
 Unlike `rand()`, the numbers shown above are truly random - well, as random as you can reasonably get without connections to quantum physists - since they were generated using [random.org](https://www.random.org/). But the effect is the same: now as soon as you clear the arena, `importantNumber` goes from pointing to 33 to now pointing to 283014995. If you then go on to use `importantNumber` for something later in the code, it will be much more likely to crash or to produce obviously garbled results. This, of course, is not a technique guaranteed to find bugs 100% of the time - this is a hacky, heuristic approach that can help reveal these sorts of bugs more often. But it is a genuinely useful hack - so far, it helped me discover one GC-related bug in my interpreter, which is pretty significant given that programming language implementations are required to be absolutely bullet-proof. Personally, I like this trick just because of how absolutely hilarious it is: using intentional memory corruption to stifle unintentional memory corruption! 
 
-If you're using ASAN(you should be - it's awesome!) you can make a more boring yet probably more effective version of this trick. Every time you clear the arena, free the old buffer and replace it with a new one. Assuming that malloc doesn't place the new buffer in the exact place of the old one, reading from invalidated pointers will be flagged as a use-after-free error by ASAN. 
+If you're using ASAN(you should be - it's awesome!) you can make a more boring yet probably more effective version of this trick. Every time you clear the arena, free the old buffer and replace it with a new one. Assuming that malloc doesn't place the new buffer in the exact place of the old one, reading from invalidated pointers will be flagged as an use-after-free error by ASAN. 
 
-Obviously, using this comes at a performance cost whenever you clear an arena, so this should be enabled with conditional compilation during development. I find that adding runtime checks and error-detectors of this nature helps a lot with tracking down safety problems and vulnerabilities. [A hard drill makes an easy battle](https://www.joelonsoftware.com/2001/11/20/a-hard-drill-makes-an-easy-battle/).
+Obviously, using this comes at a performance cost whenever you clear an arena, so this should only be enabled with conditional compilation during development. I find that adding runtime checks and error-detectors of this nature helps a lot with tracking down safety problems and vulnerabilities. [A hard drill makes an easy battle](https://www.joelonsoftware.com/2001/11/20/a-hard-drill-makes-an-easy-battle/).
