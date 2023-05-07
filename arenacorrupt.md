@@ -107,7 +107,7 @@ Here's the solution I came up with while implementing Nost: *intentional memory 
 
 ```c
 void arenaClear(arena* arn) {
-    for(int i = 0; i < 16 * 1024; i++)
+    for(size_t i = 0; i < 16 * 1024; i++)
         ((char*)arn->base)[i] = rand();
     arn->curr = arn->base;
 }
